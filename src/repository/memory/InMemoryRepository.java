@@ -61,7 +61,7 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
         validator.validate(entity);
         E oldEntity = entities.get(entity.getId());
         if (oldEntity != null) {
-            return oldEntity;
+            throw new IllegalArgumentException("User already exists!");
         } else {
             entities.put(entity.getId(), entity);
             return null;

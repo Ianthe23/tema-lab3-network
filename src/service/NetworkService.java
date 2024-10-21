@@ -351,16 +351,15 @@ public class NetworkService implements Service<Integer>{
         //working on a graph to find the longest path
         int V = nodes.size();
 
-        Integer value = 0;
         Map<User, Integer> pairs = IntStream.range(0, V) // map the nodes to integers
                 .boxed() // convert to Integer
                 .collect(Collectors.toMap(nodes::get, i -> i));
 
-        LinkedList<Integer>[] adj = getAdjList(pairs, V);
-        Pair<Integer,Integer> t1, t2;
-        t1=BFS(0, V, adj);
-        t2=BFS(t1.first, V, adj);
-        return t2.second;
+        LinkedList<Integer>[] adj = getAdjList(pairs, V); // get the adjacency list
+        Pair<Integer,Integer> t1, t2; // pair of the maximum distance node and the distance
+        t1 = BFS(0, V, adj); // find the maximum distance node
+        t2 = BFS(t1.first, V, adj); // find the maximum distance node from the previous node
+        return t2.second; // return the distance
     }
 
 

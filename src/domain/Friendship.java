@@ -22,7 +22,7 @@ public class Friendship extends Entity<Tuple<Integer, Integer>>{
         this.user1 = user1;
         Integer uuID1 = user1.getId();
         Integer uuID2 = user2.getId();
-        Tuple<Integer, Integer> uuIDComb = new Tuple<>(uuID1, uuID2);
+        Tuple<Integer, Integer> uuIDComb = new Tuple<>(uuID1, uuID2); // the id of the friendship is a tuple of the ids of the two users
         this.setId(uuIDComb);
         this.since = LocalDateTime.now();
     }
