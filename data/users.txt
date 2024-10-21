@@ -1,0 +1,10 @@
+2998541;Ana;Stancu;anaa
+92958282;Andreea;Dinca;andre
+2;Ana;Pastin;ana.pastin
+1510706872;Andrei;Alexe;andrei.alexe
+-631808189;Ivona;Pastin;ivo.pastin
+108278653;Raluca;Deaconu;raluu
+-892376222;Stefania;Badescu;stefii
+3284493;Karina;Olaru;kari
+607183951;Laurentiu;Pop;pop.laur
+1584027397;Luca;Pavel;luca.pavel
