@@ -7,6 +7,7 @@ import repository.Repository;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * CRUD operations repository for in-memory storage
@@ -33,10 +34,10 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
      * @return the entity with the given id
      */
     @Override
-    public E findOne(ID id) {
+    public Optional findOne(ID id) {
         if (id == null)
             throw new IllegalArgumentException("ID must be not null");
-        return entities.get(id);
+        return Optional.ofNullable(entities.get(id));
     }
 
     /**
@@ -55,7 +56,7 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
      *         the entity - otherwise
      */
     @Override
-    public E save(E entity) {
+    public Optional save(E entity) {
         if (entity == null)
             throw new IllegalArgumentException("Entity must be not null");
         validator.validate(entity);
@@ -63,8 +64,7 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
         if (oldEntity != null) {
             throw new IllegalArgumentException("User already exists!");
         } else {
-            entities.put(entity.getId(), entity);
-            return null;
+            return Optional.ofNullable(entities.put(entity.getId(), entity));
         }
     }
 
@@ -74,10 +74,10 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
      * @return the removed entity or null if there is no entity with the given id
      */
     @Override
-    public E delete(ID id) {
+    public Optional delete(ID id) {
         if (id == null)
             throw new IllegalArgumentException("ID must be not null");
-        return entities.remove(id);
+        return Optional.ofNullable(entities.remove(id));
     }
 
     /**
@@ -87,13 +87,13 @@ public class InMemoryRepository<ID, E extends Entity<ID>> implements Repository<
      *         the entity - otherwise
      */
     @Override
-    public E update(E entity) {
+    public Optional update(E entity) {
         if (entity == null)
             throw new IllegalArgumentException("Entity must be not null!");
         if (entities.get(entity.getId()) != null) {
-            entities.put(entity.getId(), entity);
-            return null;
+            validator.validate(entity);
+            return Optional.ofNullable(entities.put(entity.getId(), entity));
         }
-        return entity;
+        return Optional.ofNullable(entities.get(entity.getId()));
     }
 }

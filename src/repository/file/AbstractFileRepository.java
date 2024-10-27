@@ -5,6 +5,7 @@ import domain.validators.Validator;
 import repository.memory.InMemoryRepository;
 
 import java.io.*;
+import java.util.Optional;
 
 /**
  * CRUD operations repository for file storage
@@ -46,11 +47,12 @@ public abstract class AbstractFileRepository<ID, E extends Entity<ID>> extends I
      *         the entity - otherwise
      */
     @Override
-    public E save(E entity) {
-        E e = super.save(entity);
-        if (e == null)
-            writeToFile();
-        return e;
+    public Optional save(E entity) {
+        Optional optional = super.save(entity);
+        if (optional.isEmpty()) {
+            appendToFile(entity);
+        }
+        return optional;
     }
 
     /**
@@ -76,12 +78,12 @@ public abstract class AbstractFileRepository<ID, E extends Entity<ID>> extends I
      * @return the removed entity or null if there is no entity with the given id
      */
     @Override
-    public E delete(ID id) {
-        E e = super.delete(id);
-        if (e !=  null) {
+    public Optional delete(ID id) {
+        Optional optional = super.delete(id);
+        if (optional.isPresent()) {
             writeToFile();
         }
-        return e;
+        return optional;
     }
 
     /**
@@ -91,12 +93,12 @@ public abstract class AbstractFileRepository<ID, E extends Entity<ID>> extends I
      *         the entity - otherwise
      */
     @Override
-    public E update(E entity) {
-        E e = super.update(entity);
-        if (e == null) {
+    public Optional update(E entity) {
+        Optional optional = super.update(entity);
+        if (optional.isEmpty()) {
             writeToFile();
         }
-        return e;
+        return optional;
     }
 
     /**

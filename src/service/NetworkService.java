@@ -69,8 +69,8 @@ public class NetworkService implements Service<Integer>{
         }
         foundUser.getFriendships().clear();
 
-        Entity<String> deletedUser = userRepo.delete(foundUser.getId());
-        return deletedUser;
+        Optional<Entity<String>> deletedUser = userRepo.delete(foundUser.getId());
+        return deletedUser.get();
     }
 
     /**
@@ -202,14 +202,14 @@ public class NetworkService implements Service<Integer>{
      */
     private Friendship findFriendship(User user1, User user2) {
         Tuple<Integer, Integer> id = new Tuple<>(user1.getId(), user2.getId());
-        Friendship friendship = (Friendship) friendshipRepo.findOne(id);
+        Optional<Friendship> friendship = friendshipRepo.findOne(id);
 
         if (friendship == null) {
             Tuple<Integer, Integer> id2 = new Tuple<>(user2.getId(), user1.getId());
-            friendship = (Friendship) friendshipRepo.findOne(id2);
+            friendship = friendshipRepo.findOne(id2);
         }
 
-        return friendship;
+        return friendship.get();
     }
 
     /**
