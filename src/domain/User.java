@@ -24,7 +24,6 @@ public class User extends Entity<Integer>{
         this.firstName = firstName;
         this.lastName = lastName;
         this.username = username;
-        this.setId(username.hashCode());
         this.friendships = new ArrayList<>();
     }
 

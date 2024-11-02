@@ -1,10 +1,12 @@
 package domain;
 
+import java.io.Serializable;
+
 /**
  * Abstract class for an entity
  * @param <ID> - the type of the id of the entity
  */
-public class Entity<ID>  {
+public class Entity<ID>  implements Serializable {
 
     /**
      * The id of the entity

@@ -26,7 +26,7 @@ public interface Service<ID> {
      * @return true - if the user was removed
      *         false - if the user does not exist
      */
-    Entity<String> removeUser(String username);
+    User removeUser(String username);
 
     /**
      * Method for adding a friendship

@@ -18,18 +18,20 @@ import static java.lang.Integer.MIN_VALUE;
  * Service for the network
  */
 public class NetworkService implements Service<Integer>{
-    private final Repository userRepo;
+    private final Repository<Integer, User> userRepo;
     private final Repository friendshipRepo;
     public Set<User> set; //for verifying if a user has been traversed
+    private final String type;
 
     /**
      * Constructor
      * @param userRepo - the repository for the users
      * @param friendshipRepo - the repository for the friendships
      */
-    public NetworkService(Repository userRepo, Repository friendshipRepo) {
+    public NetworkService(Repository userRepo, Repository friendshipRepo, String type) {
         this.userRepo = userRepo;
         this.friendshipRepo = friendshipRepo;
+        this.type = type;
     }
 
     /**
@@ -54,22 +56,24 @@ public class NetworkService implements Service<Integer>{
      *         false - if the user does not exist
      */
     @Override
-    public Entity<String> removeUser(String username) {
+    public User removeUser(String username) {
         User foundUser = findUsername(username);
         if (foundUser == null) {
             throw new ServiceException("User not found!");
         }
 
-        List<User> friends = new ArrayList<>(foundUser.getFriendships());
-        try {
-            friends.forEach(friend->removeFriendship(foundUser.getUsername(), friend.getUsername()));
-            friends.forEach(friend->removeFriendship(friend.getUsername(), foundUser.getUsername()));
-        } catch (ServiceException e) {
+        if (Objects.equals(type, "InMemory")) {
+            List<User> friends = new ArrayList<>(foundUser.getFriendships());
+            try {
+                friends.forEach(friend->removeFriendship(foundUser.getUsername(), friend.getUsername()));
+                friends.forEach(friend->removeFriendship(friend.getUsername(), foundUser.getUsername()));
+            } catch (ServiceException e) {
 
+            }
+            foundUser.getFriendships().clear();
         }
-        foundUser.getFriendships().clear();
 
-        Optional<Entity<String>> deletedUser = userRepo.delete(foundUser.getId());
+        Optional<User> deletedUser = userRepo.delete(foundUser.getId());
         return deletedUser.get();
     }
 
@@ -88,7 +92,10 @@ public class NetworkService implements Service<Integer>{
         Friendship friendship = new Friendship(user1, user2);
 
         friendshipRepo.save(friendship);
-        addFriendToUsers(user1, user2);
+
+        if(type.equals("InMemory")) {
+            addFriendToUsers(user1, user2);
+        }
         return true;
     }
 
@@ -109,14 +116,19 @@ public class NetworkService implements Service<Integer>{
             throw new ServiceException("The friendship was not found!");
         }
 
-        ArrayList<User> friendshipListuser1=user1.getFriendships();
-        ArrayList<User> friendshipListUser2=user2.getFriendships();
-        friendshipListuser1.remove(user2);
-        friendshipListUser2.remove(user1);
-        user1.setFriendships(friendshipListuser1);
-        user2.setFriendships(friendshipListUser2);
-        userRepo.update(user1);
-        userRepo.update(user2);
+        if (type.equals("InMemory")) {
+            ArrayList<User> friendshipListuser1=user1.getFriendships();
+            ArrayList<User> friendshipListUser2=user2.getFriendships();
+
+            friendshipListuser1.remove(user2);
+            friendshipListUser2.remove(user1);
+
+            user1.setFriendships(friendshipListuser1);
+            user2.setFriendships(friendshipListUser2);
+
+            userRepo.update(user1);
+            userRepo.update(user2);
+        }
 
         friendshipRepo.delete(friendship.getId());
         return true;
@@ -165,21 +177,20 @@ public class NetworkService implements Service<Integer>{
      */
     @Override
     public List<List<User>> biggestCommunity() {
+        // Retrieve all communities
         List<List<User>> allCommunities = getAllCommunities();
-        int max = MIN_VALUE;
-        List<List<User>> biggestCommunities = new ArrayList<>();
-        for (List<User> community : allCommunities) {
-            int RouteSize = longestPath((ArrayList<User>) community); //find the longest path in the community
-            if(RouteSize > max) { //if the longest path is bigger than the current maximum
-                biggestCommunities.clear(); //clear the list of biggest communities
-                max = RouteSize; //update the maximum
-                biggestCommunities.add(new ArrayList<>(community)); //add the community to the list of biggest communities
-            }
-            else if(RouteSize == max) { //if the longest path is equal to the current maximum
-                biggestCommunities.add(new ArrayList<>(community)); //add the community to the list of biggest communities
-            }
-        }
-        return biggestCommunities;
+
+        // Determine the maximum route size among all communities
+        int maxRouteSize = allCommunities.stream()
+                .mapToInt(community -> longestPath((ArrayList<User>) community)) // Find longest path in each community
+                .max() // Get the maximum path length
+                .orElse(Integer.MIN_VALUE); // Default to MIN_VALUE if no communities exist
+
+        // Filter communities to only include those with the maximum route size
+        return allCommunities.stream()
+                .filter(community -> longestPath((ArrayList<User>) community) == maxRouteSize)
+                .map(ArrayList::new) // Create a new ArrayList for each community
+                .collect(Collectors.toList()); // Collect the results into a list
     }
 
     /**
@@ -188,8 +199,8 @@ public class NetworkService implements Service<Integer>{
      * @return the user with the specified username
      */
     private User findUsername(String username) {
-        return (User) StreamSupport.stream(userRepo.findAll().spliterator(),false)
-                .filter(user->((User)user).getUsername().equals(username))
+        return StreamSupport.stream(userRepo.findAll().spliterator(),false)
+                .filter(user->user.getUsername().equals(username))
                 .findFirst()
                 .orElse(null);
     }
@@ -202,14 +213,19 @@ public class NetworkService implements Service<Integer>{
      */
     private Friendship findFriendship(User user1, User user2) {
         Tuple<Integer, Integer> id = new Tuple<>(user1.getId(), user2.getId());
-        Optional<Friendship> friendship = friendshipRepo.findOne(id);
 
-        if (friendship == null) {
-            Tuple<Integer, Integer> id2 = new Tuple<>(user2.getId(), user1.getId());
-            friendship = friendshipRepo.findOne(id2);
+        if (type.equals("InMemory")) {
+            Optional<Friendship> friendship = friendshipRepo.findOne(id);
+
+            if (friendship == null) {
+                Tuple<Integer, Integer> id2 = new Tuple<>(user2.getId(), user1.getId());
+                friendship = friendshipRepo.findOne(id2);
+            }
+
+            return friendship.get();
+        } else {
+            return (Friendship) friendshipRepo.findOne(id).get();
         }
-
-        return friendship.get();
     }
 
     /**
@@ -282,11 +298,32 @@ public class NetworkService implements Service<Integer>{
     private LinkedList<Integer>[] getAdjList(Map<User, Integer> pairs, int V) {
         LinkedList<Integer>[] adj;
         adj = new LinkedList[V];
-        IntStream.range(0, V).forEach(i->adj[i] = new LinkedList<>());
+        IntStream.range(0, V).forEach(i->adj[i] = new LinkedList<>()); // initialize the adjacency list
 
-        pairs.keySet().forEach(user -> user.getFriendships().forEach(user1 -> adj[pairs.get(user)].add(pairs.get(user1))));
+        if (type.equals("InMemory")) {
+            pairs.keySet().forEach(user -> user.getFriendships().forEach(user1 -> adj[pairs.get(user)].add(pairs.get(user1))));
+        } else {
+            pairs.keySet().forEach(user -> getFriendships(user).forEach(user1 -> adj[pairs.get(user)].add(pairs.get(user1))));
+
+        }
 
         return adj;
+    }
+
+    public List<User> getFriendships(User u)
+    {
+        List<Optional<User>> friends=new ArrayList<>();
+        Iterable <Friendship> friendships=friendshipRepo.findAll();
+
+        return StreamSupport.stream(friendships.spliterator(),false).
+                filter(friendship -> Objects.equals(friendship.getId().getSecond(), u.getId()) || Objects.equals(friendship.getId().getFirst(), u.getId()))
+                .map(friendship ->
+                {
+                    if(Objects.equals(friendship.getId().getFirst(), u.getId()))
+                        return userRepo.findOne(friendship.getId().getSecond()).orElse(null);
+                    else
+                        return userRepo.findOne(friendship.getId().getFirst()).orElse(null);
+                }).filter(Objects::nonNull).map(element->(User)element).collect(Collectors.toList());
     }
 
     /**
@@ -351,9 +388,9 @@ public class NetworkService implements Service<Integer>{
         //working on a graph to find the longest path
         int V = nodes.size();
 
-        Map<User, Integer> pairs = IntStream.range(0, V) // map the nodes to integers
-                .boxed() // convert to Integer
-                .collect(Collectors.toMap(nodes::get, i -> i));
+        Map<User, Integer> pairs = IntStream.range(0, V) // create a stream of integers from 0 to V
+                .boxed() // convert the stream of primitives to a Stream<Integer>
+                .collect(Collectors.toMap(nodes::get, i -> i)); // create a map of the nodes
 
         LinkedList<Integer>[] adj = getAdjList(pairs, V); // get the adjacency list
         Pair<Integer,Integer> t1, t2; // pair of the maximum distance node and the distance
