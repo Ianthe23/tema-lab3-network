@@ -96,6 +96,8 @@ public class NetworkService implements Service<Integer>{
         if(type.equals("InMemory")) {
             addFriendToUsers(user1, user2);
         }
+
+        addFriendToUsers(user1, user2);
         return true;
     }
 

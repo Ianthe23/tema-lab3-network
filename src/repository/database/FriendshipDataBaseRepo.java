@@ -8,9 +8,13 @@ import domain.validators.Validator;
 import exceptions.RepoException;
 import repository.Repository;
 
+import java.awt.color.ICC_ColorSpace;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -22,11 +26,19 @@ public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, 
 
     @Override
     public Optional<Friendship> save(Friendship entity) {
-        String insertSQL = "INSERT INTO \"" + table + "\"" + " (user_id1, user_id2) VALUES (?, ?)";
-        try {
-            PreparedStatement statement = data.createStatement(insertSQL);
+        String insertSQL = "INSERT INTO \"" + table + "\"" + " (user1_id, user2_id, since) VALUES (?, ?, ?)";
+
+        try (PreparedStatement statement = data.createStatement(insertSQL)) {
             statement.setInt(1, entity.getId().getFirst());
             statement.setInt(2, entity.getId().getSecond());
+
+            // Format the 'since' LocalDateTime
+            String formattedDate = formatter(entity.getSince());
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+            LocalDate parsedDate = LocalDate.parse(formattedDate, dateFormatter);
+
+            statement.setDate(3, java.sql.Date.valueOf(parsedDate));
+
             int response = statement.executeUpdate();
             return response == 0 ? Optional.of(entity) : Optional.empty();
         } catch (SQLException e) {
@@ -34,17 +46,24 @@ public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, 
         }
     }
 
+    private String formatter(LocalDateTime time) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+        return time.format(formatter);
+    }
+
     @Override
     public Optional<Friendship> delete(Tuple<Integer, Integer> id) {
         Optional<Friendship> entity = findOne(id);
 
         if (id != null) {
-            String deleteStatement  = "DELETE FROM \"" + table + "\"" + " WHERE user_id1 = ? AND user_id2 = ?";
+            String deleteStatement  = "DELETE FROM \"" + table + "\"" + " WHERE (user1_id = ? AND user2_id = ?) OR (user2_id = ? AND user1_id = ?)";
             int response = 0;
             try {
                 PreparedStatement statement = data.createStatement(deleteStatement);
                 statement.setInt(1, id.getFirst());
                 statement.setInt(2, id.getSecond());
+                statement.setInt(3, id.getSecond());
+                statement.setInt(4, id.getFirst());
                 if (entity.isPresent()) {
                     response = statement.executeUpdate();
                 }
@@ -64,7 +83,7 @@ public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, 
             throw new RepoException("Entity must not be null");
         }
 
-        String updateStatement = "UPDATE \"" + table + "\"" + " SET user_id1 = ?, user_id2 = ? WHERE (user_id1 = ? AND user_id2 = ?) OR (user_id2 = ? AND user_id1 = ?)";
+        String updateStatement = "UPDATE \"" + table + "\"" + " SET user1_id = ?, user2_id = ? WHERE (user1_id = ? AND user2_id = ?) OR (user2_id = ? AND user1_id = ?)";
 
         try {
             PreparedStatement statement = data.createStatement(updateStatement);
@@ -87,19 +106,34 @@ public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, 
             throw new IllegalArgumentException("ID must not be null");
         }
 
-        String sql = "SELECT * FROM \"" + table + "\"" +
-                " WHERE (id1 = ? AND id2 = ?) OR (id2 = ? AND id1 = ?)";
-        try {
-            PreparedStatement statement = data.createStatement(sql);
+        String sql = """
+        SELECT 
+            f.user1_id, f.user2_id,
+            u1.firstname AS firstName1, u1.lastname AS lastName1, u1.username AS username1,
+            u2.firstname AS firstName2, u2.lastname AS lastName2, u2.username AS username2,
+            f.since
+        FROM 
+            "Friendship" f
+        JOIN 
+            "User" u1 ON f.user1_id = u1.id
+        JOIN 
+            "User" u2 ON f.user2_id = u2.id
+        WHERE 
+            (f.user1_id = ? AND f.user2_id = ?) OR (f.user1_id = ? AND f.user2_id = ?);
+        """;
+
+        try (PreparedStatement statement = data.createStatement(sql)) {
             statement.setInt(1, id.getFirst());
             statement.setInt(2, id.getSecond());
-            statement.setInt(3, id.getFirst());
-            statement.setInt(4, id.getSecond());
+            statement.setInt(3, id.getSecond());
+            statement.setInt(4, id.getFirst());
+
             ResultSet resultSet = statement.executeQuery();
             if (resultSet.next()) {
                 Friendship friendship = getFriendship(resultSet);
                 return Optional.of(friendship);
             }
+
             return Optional.empty();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -128,12 +162,21 @@ public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, 
 
     @Override
     public Iterable<Friendship> findAll() {
-        String findAllStatement = "SELECT * FROM \"" + table + "\"";
+        String findAllStatement = """
+        SELECT f.user1_id, f.user2_id,
+               u1.firstname AS firstName1, u1.lastname AS lastName1, u1.username AS username1,
+               u2.firstname AS firstName2, u2.lastname AS lastName2, u2.username AS username2,
+               f.since
+        FROM "Friendship" f
+        JOIN "User" u1 ON f.user1_id = u1.id
+        JOIN "User" u2 ON f.user2_id = u2.id
+        """;
+
         Set<Friendship> friendships = new HashSet<>();
 
-        try {
-            PreparedStatement statement = data.createStatement(findAllStatement);
-            ResultSet resultSet = statement.executeQuery();
+        try (PreparedStatement statement = data.createStatement(findAllStatement);
+             ResultSet resultSet = statement.executeQuery()) {
+
             while (resultSet.next()) {
                 Friendship friendship = getFriendship(resultSet);
                 friendships.add(friendship);
@@ -141,6 +184,7 @@ public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, 
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
+
         return friendships;
     }
 }
