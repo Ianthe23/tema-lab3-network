@@ -19,11 +19,25 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+/**
+ * Database repository for friendships
+ */
 public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, Integer>, Friendship> {
+    /**
+     * Constructor
+     * @param validator - the validator
+     * @param data - the database access
+     * @param table - the table name
+     */
     public FriendshipDataBaseRepo(Validator validator, DataBaseAcces data, String table) {
         super(validator, data, table);
     }
 
+    /**
+     * Method to save a friendship
+     * @param entity - the friendship to save
+     * @return an {@code Optional} - null if the friendship was saved, the friendship otherwise
+     */
     @Override
     public Optional<Friendship> save(Friendship entity) {
         String insertSQL = "INSERT INTO \"" + table + "\"" + " (user1_id, user2_id, since) VALUES (?, ?, ?)";
@@ -46,11 +60,21 @@ public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, 
         }
     }
 
+    /**
+     * Method to format a LocalDateTime
+     * @param time - the LocalDateTime to format
+     * @return a string - the formatted LocalDateTime
+     */
     private String formatter(LocalDateTime time) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
         return time.format(formatter);
     }
 
+    /**
+     * Method to delete a friendship
+     * @param id - the id of the friendship to delete
+     * @return an {@code Optional} - null if the friendship was deleted, the friendship otherwise
+     */
     @Override
     public Optional<Friendship> delete(Tuple<Integer, Integer> id) {
         Optional<Friendship> entity = findOne(id);
@@ -77,6 +101,11 @@ public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, 
         }
     }
 
+    /**
+     * Method to update a friendship
+     * @param entity - the friendship to update
+     * @return an {@code Optional} - null if the friendship was updated, the friendship otherwise
+     */
     @Override
     public Optional<Friendship> update(Friendship entity) {
         if (entity == null) {
@@ -100,6 +129,11 @@ public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, 
         }
     }
 
+    /**
+     * Method to find a friendship
+     * @param id - the id of the friendship to find
+     * @return an {@code Optional} - null if the friendship was found, the friendship otherwise
+     */
     @Override
     public Optional<Friendship> findOne(Tuple<Integer, Integer> id) {
         if (id == null) {
@@ -140,6 +174,12 @@ public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, 
         }
     }
 
+    /**
+     * Method to get a friendship from a ResultSet
+     * @param resultSet - the ResultSet
+     * @return a friendship - the friendship from the ResultSet
+     * @throws SQLException
+     */
     private Friendship getFriendship(ResultSet resultSet) throws SQLException {
         Integer id1 = resultSet.getInt("user1_id");
         Integer id2 = resultSet.getInt("user2_id");
@@ -158,8 +198,10 @@ public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, 
         return new Friendship(user1, user2);
     }
 
-
-
+    /**
+     * Method to find all friendships
+     * @return an {@code Iterable} - the friendships
+     */
     @Override
     public Iterable<Friendship> findAll() {
         String findAllStatement = """

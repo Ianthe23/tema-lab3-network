@@ -9,10 +9,26 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
+/**
+ * Database repository for users
+ */
 public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
+    /**
+     * Constructor
+     * @param validator - the validator
+     * @param data - the database access
+     * @param Table - the table name
+     */
     public UserDataBaseRepo (Validator<User> validator, DataBaseAcces data, String Table) {
         super(validator, data, Table);
     }
+
+    /**
+     * Method to get a user from a result set
+     * @param resultSet - the result set
+     * @param id - the user id
+     * @return an {@code Optional} - null if the user was not found, the user otherwise
+     */
     private Optional<User> getUser(ResultSet resultSet, Integer id) {
         try {
             String firstName = resultSet.getString("firstname");
@@ -27,6 +43,10 @@ public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
         }
     }
 
+    /**
+     * Method to load friendships
+     * @param userMap - the user map
+     */
     private void loadFriendships(Map<Integer, User> userMap) {
         String friendshipSql = "SELECT * FROM \"Friendship\"";
 
@@ -50,6 +70,11 @@ public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
         }
     }
 
+    /**
+     * Method to find a user by id
+     * @param id - the user id
+     * @return an {@code Optional} - null if the user was not found, the user otherwise
+     */
     @Override
     public Optional<User> findOne(Integer id) {
         if (id == null) {
@@ -71,6 +96,10 @@ public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
         }
     }
 
+    /**
+     * Method to find all users
+     * @return an {@code Iterable} - the users
+     */
     @Override
     public Iterable<User> findAll() {
         String sql = "SELECT * FROM \"User\"";
@@ -94,6 +123,11 @@ public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
         return userMap.values();
     }
 
+    /**
+     * Method to check if a user exists
+     * @param username - the username
+     * @return a boolean - true if the user exists, false otherwise
+     */
     private boolean userExists(String username) {
         String checkUserSql = "SELECT COUNT(*) FROM \"User\" WHERE username = ?";
 
@@ -107,6 +141,11 @@ public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
         }
     }
 
+    /**
+     * Method to save a user
+     * @param entity - the user to save
+     * @return an {@code Optional} - null if the user was saved, the user otherwise
+     */
     @Override
     public Optional<User> save(User entity) {
         if (entity == null) {
@@ -134,6 +173,11 @@ public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
         }
     }
 
+    /**
+     * Method to delete a user
+     * @param id - the user id
+     * @return an {@code Optional} - null if the user was deleted, the user otherwise
+     */
     @Override
     public Optional<User> delete(Integer id) {
         Optional<User> entity = findOne(id);
@@ -154,6 +198,11 @@ public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
         }
     }
 
+    /**
+     * Method to update a user
+     * @param entity - the user to update
+     * @return an {@code Optional} - null if the user was updated, the user otherwise
+     */
     @Override
     public Optional<User> update(User entity) {
         if (entity == null) {
