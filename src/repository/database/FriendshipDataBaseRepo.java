@@ -62,8 +62,8 @@ public class FriendshipDataBaseRepo extends AbstractDataBaseRepo<Tuple<Integer, 
                 PreparedStatement statement = data.createStatement(deleteStatement);
                 statement.setInt(1, id.getFirst());
                 statement.setInt(2, id.getSecond());
-                statement.setInt(3, id.getSecond());
-                statement.setInt(4, id.getFirst());
+                statement.setInt(3, id.getFirst());
+                statement.setInt(4, id.getSecond());
                 if (entity.isPresent()) {
                     response = statement.executeUpdate();
                 }

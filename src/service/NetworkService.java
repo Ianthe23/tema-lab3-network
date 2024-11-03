@@ -89,15 +89,15 @@ public class NetworkService implements Service<Integer>{
         User user1 = findUsername(username1);
         User user2 = findUsername(username2);
 
-        Friendship friendship = new Friendship(user1, user2);
-
-        friendshipRepo.save(friendship);
-
-        if(type.equals("InMemory")) {
-            addFriendToUsers(user1, user2);
+        if (user1.getFriendships().contains(user2) || user2.getFriendships().contains(user1)) {
+            throw new ServiceException("They are already friends!");
         }
 
+        Friendship friendship = new Friendship(user1, user2);
+        friendshipRepo.save(friendship); // This should insert the friendship into the database
+
         addFriendToUsers(user1, user2);
+
         return true;
     }
 

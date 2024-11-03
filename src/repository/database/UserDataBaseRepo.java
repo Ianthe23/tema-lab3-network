@@ -7,9 +7,7 @@ import exceptions.RepoException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
     public UserDataBaseRepo (Validator<User> validator, DataBaseAcces data, String Table) {
@@ -22,7 +20,31 @@ public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
             String username = resultSet.getString("username");
             User user = new User(firstName, lastName, username);
             user.setId(id);
+            user.setFriendships(new ArrayList<>()); // Initialize an empty list for friendships
             return Optional.of(user);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void loadFriendships(Map<Integer, User> userMap) {
+        String friendshipSql = "SELECT * FROM \"Friendship\"";
+
+        try (PreparedStatement statement = data.createStatement(friendshipSql);
+             ResultSet resultSet = statement.executeQuery()) {
+
+            while (resultSet.next()) {
+                int user1Id = resultSet.getInt("user1_id");
+                int user2Id = resultSet.getInt("user2_id");
+
+                User user1 = userMap.get(user1Id);
+                User user2 = userMap.get(user2Id);
+
+                if (user1 != null && user2 != null) {
+                    user1.getFriendships().add(user2);
+                    user2.getFriendships().add(user1);
+                }
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -51,19 +73,38 @@ public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
 
     @Override
     public Iterable<User> findAll() {
-        String sql = "SELECT * FROM \"" + table + "\"";
-        Set<User> users = new HashSet<>();
-        try {
-            PreparedStatement statement = data.createStatement(sql);
-            ResultSet resultSet = statement.executeQuery();
+        String sql = "SELECT * FROM \"User\"";
+        Map<Integer, User> userMap = new HashMap<>();
+
+        try (PreparedStatement statement = data.createStatement(sql);
+             ResultSet resultSet = statement.executeQuery()) {
+
             while (resultSet.next()) {
                 Integer id = resultSet.getInt("id");
-                users.add(getUser(resultSet, id).get());
+                Optional<User> optionalUser = getUser(resultSet, id);
+                optionalUser.ifPresent(user -> userMap.put(id, user));
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-        return users;
+
+        // Load all friendships
+        loadFriendships(userMap);
+
+        return userMap.values();
+    }
+
+    private boolean userExists(String username) {
+        String checkUserSql = "SELECT COUNT(*) FROM \"User\" WHERE username = ?";
+
+        try (PreparedStatement statement = data.createStatement(checkUserSql)) {
+            statement.setString(1, username);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                return resultSet.next() && resultSet.getInt(1) > 0;
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override
@@ -71,15 +112,23 @@ public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
         if (entity == null) {
             throw new IllegalArgumentException("Entity must not be null");
         }
+
         validator.validate(entity);
-        String sql = "INSERT INTO \"" + table + "\"" + " (firstname, lastname, username) VALUES (?, ?, ?)";
-        try {
-            PreparedStatement statement = data.createStatement(sql);
+
+        // Check if the user already exists
+        if (userExists(entity.getUsername())) {
+            throw new RepoException("User already exists");
+        }
+
+        String sql = "INSERT INTO \"User\" (firstname, lastname, username) VALUES (?, ?, ?)";
+
+        try (PreparedStatement statement = data.createStatement(sql)) {
             statement.setString(1, entity.getFirstName());
             statement.setString(2, entity.getLastName());
             statement.setString(3, entity.getUsername());
+
             int response = statement.executeUpdate();
-            return response == 0 ? Optional.of(entity) : Optional.empty();
+            return response > 0 ? Optional.of(entity) : Optional.empty();
         } catch (SQLException e) {
             throw new RepoException(e);
         }
@@ -119,7 +168,7 @@ public class UserDataBaseRepo extends AbstractDataBaseRepo<Integer, User> {
             statement.setString(3, entity.getUsername());
             statement.setInt(4, entity.getId());
             int response = statement.executeUpdate();
-            return response == 0 ? Optional.of(entity) : Optional.empty();
+            return response == 1 ? Optional.of(entity) : Optional.empty();
         } catch (SQLException e) {
             throw new RepoException(e);
         }
