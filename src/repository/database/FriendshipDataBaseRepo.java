@@ -1,14 +1,13 @@
 package repository.database;
 
-import domain.Entity;
 import domain.Friendship;
 import domain.Tuple;
 import domain.User;
 import domain.validators.Validator;
 import exceptions.RepoException;
-import repository.Repository;
+import repository.database.utils.AbstractDataBaseRepo;
+import repository.database.utils.DataBaseAcces;
 
-import java.awt.color.ICC_ColorSpace;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;

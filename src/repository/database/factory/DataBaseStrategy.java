@@ -1,4 +1,4 @@
-package repository.database;
+package repository.database.factory;
 
 /**
  * Enum for database strategy

@@ -1,6 +1,7 @@
-package repository.database;
+package repository.database.factory;
 
 import domain.validators.Validator;
+import repository.database.utils.AbstractDataBaseRepo;
 
 /**
  * Interface for a database factory

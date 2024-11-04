@@ -1,10 +1,9 @@
-package repository.database;
+package repository.database.utils;
 
 import domain.Entity;
 import domain.validators.Validator;
 import repository.Repository;
 
-import java.util.Optional;
 /**
  * Abstract class for a database repository
  * @param <ID> - type E must have an attribute of type ID

@@ -3,21 +3,16 @@ import domain.Tuple;
 import domain.User;
 import domain.validators.*;
 import repository.Repository;
-import repository.database.AbstractDataBaseRepo;
-import repository.database.DataBaseAcces;
-import repository.database.DataBaseRepoFactory;
-import repository.database.DataBaseStrategy;
+import repository.database.utils.AbstractDataBaseRepo;
+import repository.database.utils.DataBaseAcces;
+import repository.database.factory.DataBaseRepoFactory;
+import repository.database.factory.DataBaseStrategy;
 import repository.file.UserRepository;
 import repository.memory.InMemoryRepository;
 import service.NetworkService;
 import UI.UI;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.IntStream;
 
 public class Main {
     public static void main(String[] args) {

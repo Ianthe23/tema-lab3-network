@@ -3,6 +3,8 @@ package repository.database;
 import domain.User;
 import domain.validators.Validator;
 import exceptions.RepoException;
+import repository.database.utils.AbstractDataBaseRepo;
+import repository.database.utils.DataBaseAcces;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

@@ -1,7 +1,10 @@
-package repository.database;
+package repository.database.factory;
 
 import domain.validators.Validator;
 import exceptions.RepoException;
+import repository.database.*;
+import repository.database.utils.AbstractDataBaseRepo;
+import repository.database.utils.DataBaseAcces;
 
 /**
  * Factory for creating database repositories
